@@ -1,0 +1,340 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 2,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "cendu6x9z2y2of"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH app_events AS (\r\n  SELECT \r\n    timestamp as time,\r\n    CASE \r\n      WHEN event_type = 'APP_START' THEN 'APP_RUNNING'\r\n      WHEN event_type = 'APP_EXIT' THEN 'APP_CLOSED'\r\n    END as state,\r\n    1 as priority  -- Higher priority for app events\r\n  FROM alarm_logs\r\n  WHERE event_type IN ('APP_START', 'APP_EXIT')\r\n    AND $__timeFilter(timestamp)\r\n  \r\n  UNION ALL\r\n  \r\n  SELECT\r\n    timestamp as time,\r\n    CASE\r\n      WHEN event_type = 'ALARM_ON' THEN 'ALARM_SOUNDING'\r\n      WHEN event_type = 'ALARM_OFF' THEN 'ALARM_OFF'\r\n      WHEN recording_alarm = TRUE THEN 'SETUP_MODE'\r\n      ELSE 'IDLE'\r\n    END as state,\r\n    2 as priority  -- Lower priority for alarm states\r\n  FROM alarm_logs\r\n  WHERE (event_type IN ('ALARM_ON', 'ALARM_OFF') OR recording_alarm IS NOT NULL)\r\n    AND $__timeFilter(timestamp)\r\n),\r\n\r\nordered_events AS (\r\n  SELECT\r\n    time,\r\n    state,\r\n    priority,\r\n    LEAD(time, 1, NOW()) OVER (ORDER BY time) as next_time\r\n  FROM app_events\r\n  ORDER BY time, priority\r\n)\r\n\r\nSELECT\r\n  time,\r\n  state,\r\n  next_time - time as duration\r\nFROM ordered_events\r\nORDER BY time",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "New panel",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "cendu6x9z2y2of"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "#EAB839",
+                "value": 30
+              },
+              {
+                "color": "#EF843C",
+                "value": 60
+              },
+              {
+                "color": "#E24D42",
+                "value": 90
+              },
+              {
+                "color": "#BA43A9",
+                "value": 120
+              },
+              {
+                "color": "#1F78C1",
+                "value": 150
+              },
+              {
+                "color": "#6ED0E0",
+                "value": 200
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "Select count(*) \"Колличество записей\"  FROM alarm_logs ",
+          "refId": "A",
+          "sql": {
+            "columns": [],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          },
+          "table": "alarm_logs"
+        }
+      ],
+      "title": "New panel",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "cendu6x9z2y2of"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "fillOpacity": 70,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineWidth": 0,
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 1,
+      "options": {
+        "alignValue": "left",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "auto",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "cendu6x9z2y2of"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH app_events AS (\r\n  SELECT\r\n    timestamp as time,\r\n    CASE\r\n      WHEN event_type = 'APP_EXIT' THEN 'NOT_WORKS'\r\n      WHEN event_type = 'ALARM_ON' THEN 'ALARM_ON'\r\n      WHEN recording_alarm = TRUE THEN 'SETUP_MODE'\r\n      ELSE 'WORKS'\r\n    END as state,\r\n    2 as priority  -- Lower priority for alarm states\r\n  FROM alarm_logs\r\n  WHERE (event_type IN ('ALARM_ON', 'ALARM_OFF') OR recording_alarm IS NOT NULL)\r\n),\r\n\r\nordered_events AS (\r\n  SELECT\r\n    time,\r\n    state,\r\n    priority,\r\n    LEAD(time, 1, NOW()) OVER (ORDER BY time) as next_time\r\n  FROM app_events\r\n  ORDER BY time, priority\r\n)\r\n\r\nSELECT\r\n  time,\r\n  next_time,\r\n  state\r\nFROM ordered_events\r\nORDER BY time",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "New panel",
+      "type": "state-timeline"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 41,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "2025-06-03T19:35:28.575Z",
+    "to": "2025-06-04T06:27:33.567Z"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Лог состояний",
+  "uid": "b5a8d0d2-ae2c-405f-bda3-3ed6d00647fd",
+  "version": 5
+}
